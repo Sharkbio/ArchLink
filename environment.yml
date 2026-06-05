@@ -1,0 +1,29 @@
+name: archlink
+channels:
+  - pytorch
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - pyyaml
+  - ruamel.yaml
+  - biopython
+  - tqdm
+  - click
+  - atomicwrites
+  - python-igraph
+  - leidenalg
+  - pytorch
+  - hmmer
+  - prodigal
+  - perl
+  - pip
+  - pip:
+      - fair-esm
+      - hnswlib
+      - checkm-genome
+      - biolib

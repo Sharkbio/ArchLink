@@ -1,0 +1,42 @@
+__pycache__/
+*.py[cod]
+*.so
+*.o
+*.log
+*.err
+*.out
+*.hmmout
+*.frag
+*.frag.*
+*.tmp
+*.temp
+*.swp
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated runtime directories
+aug/
+bam.graph/
+binning/
+cluster_res/
+archlink_res_bins/
+contrastive_learning_res_bins/
+linking/
+data/
+dist/
+build/
+
+# Regenerable outputs
+*.npz
+*.npy
+*.tsv.gz
+*.fai
+*.bai
+
+# Local training checkpoints outside the release artifact directory
+*.ckpt
+checkpoint*.pth.tar
+model_best.pth.tar

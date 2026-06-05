@@ -1,0 +1,98 @@
+common:
+  path:
+    binning_path: "./contrastive_learning"
+    linking_path: "."
+    base_path: "./data"
+    ID: "example_run"
+    contig_file: "./data/example_run/contigs.fasta"
+    bam_file: "./data/example_run/bam"
+    checkm2_path: "/path/to/checkm2_env"
+    LD_LIBRARY_PATH: "/path/to/seqgraph_htslib/lib:$LD_LIBRARY_PATH"
+    output_path: "{base_path}/{ID}"
+    embeding_path: "{output_path}/embeddings.tsv"
+    binning_res_path: "{output_path}/leiden_res"
+    seed_file: "{output_path}/bacar_marker_2quarter_lencutoff_1000.seed"
+
+contrastive_learning:
+  share_params:
+    contig_len: 1000
+    num_threads: 20
+    n_views: 6
+    skip_codon_features: true
+    num_gpus: 1
+    chunk_size: 50
+  train:
+    kmer_model_path: "empty"
+    workers: 5
+    cl_epochs: 200
+    covmodelepochs: 50
+    cl_batch_size: 1024
+    cl_lr: 0.001
+    cl_weight_decay: 0.0001
+    cl_out_dim: 128
+    cl_dropout_value: 0.2
+    emb_szs: 2048
+    cl_n_layer: 3
+    add_model_for_coverage: true
+    nokmer: false
+    pretrain_coveragemodel: false
+    emb_szs_forcov: 2048
+    cl_out_dim_forcov: 128
+    cl_n_layer_forcov: 3
+    earlystop: true
+    pretrain_kmer_model_path: "no"
+    not_load_kmermetric_state: false
+    finetunepretrainmodel: false
+    finetunelr_ratio: 0.1
+    addvars: true
+    vars_sqrt: true
+    cl_log_every_n_steps: 20
+    cl_temperature: 0.16
+    covmodel_temperature: 0.1
+    notuse_scheduler: false
+    fp16_precision: false
+    addcovloss: false
+    lambdaloss2: 1.0
+    addkmerloss: false
+    lambdakmerloss2: 1.0
+    kmermodel_temperature: 0.1
+    cov_meannormalize: false
+    cov_minmaxnormalize: false
+    cov_standardization: false
+    notuseaug0: false
+    lossbalance: false
+    kmer_l2_normalize: false
+    kmerMetric_notl2normalize: false
+    covmodel_notl2normalize: false
+    small_bin_size: 200000
+    cluster_num: 0
+    not_run_infomap: false
+    not_l2normalize: false
+    bac_mg_table: false
+    ar_mg_table: false
+
+linking:
+  binning:
+    max_edges: 100
+    partgraph_ratio: 50
+    lmode: "l2"
+    bandwidth_for_edge_extraction: 0.1
+  model:
+    batch_size: 16
+    epochs: 10
+    lr: 0.0001
+    weight_decay: 0.0001
+    out_dim: 128
+    n_layer: 3
+    dropout_value: 0.2
+    log_every_n_steps: 20
+    temperature: 0.1
+  prodigal:
+    meta: "meta"
+    num_parts: 20
+    output_faa: true
+    output_fna: false
+    gff_output: false
+    prodigal_output: ""
+    prodigal_input: ""
+    prodigal_args: ""
