@@ -18,6 +18,10 @@ dependencies:
   - python-igraph
   - leidenalg
   - pytorch
+  - bedtools
+  - samtools
+  - pysam
+  - checkm2
   - hmmer
   - prodigal
   - perl

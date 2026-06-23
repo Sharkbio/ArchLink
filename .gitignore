@@ -28,6 +28,7 @@ linking/
 data/
 dist/
 build/
+example/data/
 
 # Regenerable outputs
 *.npz
@@ -35,6 +36,8 @@ build/
 *.tsv.gz
 *.fai
 *.bai
+*.bam
+*.sam
 
 # Local training checkpoints outside the release artifact directory
 *.ckpt

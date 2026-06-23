@@ -7,6 +7,7 @@ common:
     contig_file: "./data/example_run/contigs.fasta"
     bam_file: "./data/example_run/bam"
     checkm2_path: "/path/to/checkm2_env"
+    checkm2_bin: "checkm2"
     LD_LIBRARY_PATH: "/path/to/seqgraph_htslib/lib:$LD_LIBRARY_PATH"
     output_path: "{base_path}/{ID}"
     embeding_path: "{output_path}/embeddings.tsv"
