@@ -7,6 +7,25 @@ from . import score_cluster
 from . import transfer_fa
 import argparse
 import logging
+import os
+import shlex
+import subprocess
+
+
+def resolve_checkm2_command(args):
+    """Resolve the CheckM2 executable from config or PATH."""
+    checkm2_bin = getattr(args, "checkm2_bin", None)
+    if checkm2_bin:
+        return checkm2_bin
+
+    checkm2_path = getattr(args, "checkm2_path", None)
+    if checkm2_path:
+        candidate = os.path.join(checkm2_path, "bin", "checkm2")
+        if os.path.exists(candidate):
+            return candidate
+        return checkm2_path
+
+    return "checkm2"
 
 def binning_init(args,logger):
     output_path = args.output_path
@@ -49,6 +68,19 @@ def binning_init(args,logger):
     args.output_path = output_path
     transfer_fa.main(args,logger)
     
-    # checkm
-    os.system(f'{args.checkm2_path}/bin/checkm2 predict --input {args.output_path}/binning/bins --output-directory {args.output_path}/binning/checkm2_bins -x fa -t {args.num_threads}')
+    checkm2_cmd = resolve_checkm2_command(args)
+    command = [
+        checkm2_cmd,
+        "predict",
+        "--input",
+        f"{args.output_path}/binning/bins",
+        "--output-directory",
+        f"{args.output_path}/binning/checkm2_bins",
+        "-x",
+        "fa",
+        "-t",
+        str(args.num_threads),
+    ]
+    logger.info("Running CheckM2: %s", " ".join(shlex.quote(part) for part in command))
+    subprocess.run(command, check=True)
 
