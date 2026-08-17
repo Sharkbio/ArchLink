@@ -15,7 +15,7 @@ This repository contains the source code, configuration templates, bundled helpe
 - `generate01/`, `binning02/`: graph construction and bin refinement
 - `generate_cos03/`, `connect04/`: context-aware linking and scaffolding
 - `save_models/`: pretrained Transformer checkpoint, random-forest models, and helper binaries
-- `FragGeneScan-master/`: bundled FragGeneScan source, binary, and training files
+- `FragGeneScan-master/`: bundled FragGeneScan source, Perl wrapper, and training files
 - `scripts/repository_audit.py`: repository completeness check for public release
 
 ## Included release artifacts
@@ -49,6 +49,7 @@ conda activate archlink
 The environment file includes the core packaged dependencies used directly by the repository, including:
 
 - PyTorch
+- `make` and a C compiler for building the bundled FragGeneScan executable
 - HMMER
 - bedtools
 - samtools
@@ -77,6 +78,32 @@ ArchLink calls several external executables during the pipeline:
 - Perl for `FragGeneScan-master/run_FragGeneScan.pl`
 
 FragGeneScan is bundled in this repository and is invoked from `FragGeneScan-master/`.
+
+### Build FragGeneScan
+
+The repository contains the FragGeneScan source code, Perl wrapper, and training files. The compiled
+`FragGeneScan-master/FragGeneScan` executable is generated locally because it is platform-specific.
+The build respects the `CC` environment variable; otherwise it uses the system C compiler `cc`.
+
+After creating the conda environment, build it with:
+
+```bash
+bash scripts/build_fraggenescan.sh
+```
+
+Equivalent manual commands are:
+
+```bash
+make -C FragGeneScan-master clean
+make -C FragGeneScan-master fgs
+```
+
+The main ArchLink entry point also checks for this executable and attempts to build it automatically
+before the binning stage. If compilation fails, the error reports the required directory and command.
+
+The marker extraction helper is a Perl script. ArchLink invokes it as
+`perl contrastive_learning/auxiliary/test_getmarker_2quarter.pl`, so its Unix executable bit is not
+required.
 
 CheckM2 can be configured in either of two ways:
 

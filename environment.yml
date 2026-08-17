@@ -18,6 +18,8 @@ dependencies:
   - python-igraph
   - leidenalg
   - pytorch
+  - make
+  - c-compiler
   - bedtools
   - samtools
   - pysam

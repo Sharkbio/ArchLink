@@ -2,6 +2,7 @@ import logging
 import sys
 import os
 from contrastive_learning import contrastive_learning_main
+from contrastive_learning.utils import ensure_fraggenescan_ready
 from generate01 import generate_main
 from binning02 import binning_main
 from generate_cos03 import generate_cos_main
@@ -153,6 +154,7 @@ def main():
     cli_args = build_parser().parse_args()
     config_path = Path(cli_args.config).expanduser().resolve()
     args = Args.from_yaml(str(config_path))
+    ensure_fraggenescan_ready(os.path.join(args.linking_path, "FragGeneScan-master"))
     
     # 初始化日志
     logger = setup_logging('ArchLink', args.output_path)

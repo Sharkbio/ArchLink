@@ -10,6 +10,7 @@ import torch
 import yaml
 import sys
 import shlex
+import subprocess
 
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
@@ -107,7 +108,7 @@ def get_kmer_coverage_aug0(data_path):
     shuffled_covMat = pd.read_csv(cov_file, sep='\t', usecols=range(1, covHeader.shape[1])).values
     shuffled_namelist = pd.read_csv(cov_file, sep='\t', usecols=range(1)).values[:, 0]
 
-    covIdxArr = np.empty(len(mapObj), dtype=np.int)
+    covIdxArr = np.empty(len(mapObj), dtype=np.int64)
     for contigIdx in range(len(shuffled_namelist)):
         if shuffled_namelist[contigIdx].split('_aug')[0] in mapObj:
             covIdxArr[mapObj[shuffled_namelist[contigIdx].split('_aug')[0]]] = contigIdx
@@ -117,7 +118,7 @@ def get_kmer_coverage_aug0(data_path):
     shuffled_compositMat = pd.read_csv(com_file, sep=',', usecols=range(1, compositHeader.shape[1])).values
     shuffled_namelist = pd.read_csv(com_file, sep=',', usecols=range(1)).values[:, 0]
 
-    covIdxArr = np.empty(len(mapObj), dtype=np.int)
+    covIdxArr = np.empty(len(mapObj), dtype=np.int64)
     for contigIdx in range(len(shuffled_namelist)):
         if shuffled_namelist[contigIdx].split('_aug')[0] in mapObj:
             covIdxArr[mapObj[shuffled_namelist[contigIdx].split('_aug')[0]]] = contigIdx
@@ -199,6 +200,56 @@ def file_len(fname):
             pass
     return i + 1
 
+
+def ensure_fraggenescan_ready(frag_scan_dir: str) -> str:
+    """Return a usable FragGeneScan executable, building it when necessary."""
+    frag_scan_dir = os.path.abspath(frag_scan_dir)
+    executable = os.path.join(frag_scan_dir, "FragGeneScan")
+    makefile = os.path.join(frag_scan_dir, "Makefile")
+
+    if os.path.isfile(executable) and os.access(executable, os.X_OK):
+        return executable
+
+    if not os.path.isfile(makefile):
+        raise FileNotFoundError(
+            f"FragGeneScan executable is missing and its Makefile was not found: {makefile}"
+        )
+
+    if shutil.which("make") is None:
+        raise RuntimeError(
+            "FragGeneScan is not compiled and `make` is not available. "
+            f"Run `make -C {frag_scan_dir} fgs` after installing make and gcc."
+        )
+    compiler = os.environ.get("CC", "cc")
+    if shutil.which(compiler) is None:
+        raise RuntimeError(
+            f"FragGeneScan is not compiled and C compiler `{compiler}` is not available. "
+            f"Install a C compiler, then run `make -C {frag_scan_dir} fgs`."
+        )
+
+    try:
+        subprocess.run(
+            ["make", "-C", frag_scan_dir, "clean"],
+            check=True,
+            text=True,
+        )
+        subprocess.run(
+            ["make", "-C", frag_scan_dir, "fgs"],
+            check=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            f"FragGeneScan compilation failed in {frag_scan_dir}. "
+            f"Run `make -C {frag_scan_dir} fgs` to inspect the build error."
+        ) from exc
+
+    if not (os.path.isfile(executable) and os.access(executable, os.X_OK)):
+        raise RuntimeError(
+            f"FragGeneScan compilation completed without creating an executable: {executable}"
+        )
+    return executable
+
 def gen_seed(args,logger, contig_file: str, threads: int, contig_length_threshold: int,
              marker_name: str = "marker", quarter: str = "3quarter"):
     """
@@ -211,9 +262,10 @@ def gen_seed(args,logger, contig_file: str, threads: int, contig_length_threshol
     :param quarter: The quarter identifier (default: "3quarter").
     :return: The number of candidate seeds generated.
     """
-    fragScanScript = os.path.join(args.linking_path, 'FragGeneScan-master', 'run_FragGeneScan.pl')
+    frag_scan_dir = os.path.join(args.linking_path, "FragGeneScan-master")
+    fragScanScript = os.path.join(frag_scan_dir, "run_FragGeneScan.pl")
 
-    hmmExeURL = 'hmmsearch'
+    hmmExeURL = "hmmsearch"
     markerExeURL = os.path.join(args.binning_path, 'auxiliary', 'test_getmarker_' + quarter + '.pl')
     markerURL = os.path.join(args.binning_path, 'auxiliary', marker_name + '.hmm')
     seedURL = args.output_path + "/" + marker_name + "_" + quarter + "_lencutoff_" + str(contig_length_threshold) + ".seed"
@@ -221,43 +273,126 @@ def gen_seed(args,logger, contig_file: str, threads: int, contig_length_threshol
     fragResultURL = contig_file + ".frag.faa"
     hmmResultURL = contig_file + '.' + marker_name + ".hmmout"
 
+    if not os.path.isfile(fragScanScript):
+        raise FileNotFoundError(f"FragGeneScan Perl wrapper was not found: {fragScanScript}")
+    if not os.path.isfile(markerExeURL):
+        raise FileNotFoundError(f"Marker extraction script was not found: {markerExeURL}")
+    if not os.path.isfile(markerURL):
+        raise FileNotFoundError(f"Marker HMM file was not found: {markerURL}")
+
+    ensure_fraggenescan_ready(frag_scan_dir)
+
     if not (os.path.exists(fragResultURL)):
-        fragCmd = (
-            "perl "
-            + shlex.quote(fragScanScript)
-            + " -genome="
-            + shlex.quote(contig_file)
-            + " -out="
-            + shlex.quote(contig_file + ".frag")
-            + " -complete=0 -train=complete -thread="
-            + str(threads)
-            + " 1>"
-            + shlex.quote(contig_file + ".frag.out")
-            + " 2>"
-            + shlex.quote(contig_file + ".frag.err")
-        )
-        logger.info("exec cmd: " + fragCmd)
-        os.system(fragCmd)
+        frag_cmd = [
+            "perl",
+            fragScanScript,
+            f"-genome={contig_file}",
+            f"-out={contig_file}.frag",
+            "-complete=0",
+            "-train=complete",
+            f"-thread={threads}",
+        ]
+        frag_cmd_text = " ".join(shlex.quote(part) for part in frag_cmd)
+        logger.info("exec cmd: " + frag_cmd_text)
+        try:
+            with open(contig_file + ".frag.out", "w") as frag_stdout, open(
+                contig_file + ".frag.err", "w"
+            ) as frag_stderr:
+                subprocess.run(
+                    frag_cmd,
+                    stdout=frag_stdout,
+                    stderr=frag_stderr,
+                    check=True,
+                    text=True,
+                )
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "FragGeneScan requires a Perl runtime, but `perl` was not found "
+                "on PATH. Activate the archlink environment and retry."
+            ) from exc
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(
+                "FragGeneScan failed. "
+                f"Command: {frag_cmd_text}. "
+                f"See {contig_file}.frag.err for details."
+            ) from exc
 
     if os.path.exists(fragResultURL):
         if not (os.path.exists(hmmResultURL)):
-            hmmCmd = hmmExeURL + " --domtblout " + hmmResultURL + " -E 1e-10 --cpu " + str(
-                threads) + " " + markerURL + " " + fragResultURL + " 1>" + hmmResultURL + ".out 2>" + hmmResultURL + ".err"
-            logger.info("exec cmd: " + hmmCmd)
-            os.system(hmmCmd)
+            hmm_cmd = [
+                hmmExeURL,
+                "--domtblout",
+                hmmResultURL,
+                "-E",
+                "1e-10",
+                "--cpu",
+                str(threads),
+                markerURL,
+                fragResultURL,
+            ]
+            hmm_cmd_text = " ".join(shlex.quote(part) for part in hmm_cmd)
+            logger.info("exec cmd: " + hmm_cmd_text)
+            if shutil.which(hmmExeURL) is None:
+                raise RuntimeError(
+                    "HMMER `hmmsearch` was not found on PATH. "
+                    "Activate the archlink environment and retry."
+                )
+            try:
+                with open(hmmResultURL + ".out", "w") as hmm_stdout, open(
+                    hmmResultURL + ".err", "w"
+                ) as hmm_stderr:
+                    subprocess.run(
+                        hmm_cmd,
+                        stdout=hmm_stdout,
+                        stderr=hmm_stderr,
+                        check=True,
+                        text=True,
+                    )
+            except subprocess.CalledProcessError as exc:
+                raise RuntimeError(
+                    "hmmsearch failed. "
+                    f"Command: {hmm_cmd_text}. "
+                    f"See {hmmResultURL}.err for details."
+                ) from exc
 
         if os.path.exists(hmmResultURL):
             if not (os.path.exists(seedURL)):
-                markerCmd = markerExeURL + " " + hmmResultURL + " " + contig_file + " " + str(
-                    contig_length_threshold) + " " + seedURL
-                logger.info("exec cmd: " + markerCmd)
-                os.system(markerCmd)
+                marker_cmd = [
+                    "perl",
+                    markerExeURL,
+                    hmmResultURL,
+                    contig_file,
+                    str(contig_length_threshold),
+                    seedURL,
+                ]
+                marker_cmd_text = " ".join(shlex.quote(part) for part in marker_cmd)
+                logger.info("exec cmd: " + marker_cmd_text)
+                try:
+                    subprocess.run(marker_cmd, check=True, text=True)
+                except FileNotFoundError as exc:
+                    raise RuntimeError(
+                        "Marker extraction requires a Perl runtime, but `perl` was not found "
+                        "on PATH. Activate the archlink environment and retry."
+                    ) from exc
+                except subprocess.CalledProcessError as exc:
+                    raise RuntimeError(
+                        "Marker extraction failed. "
+                        f"Command: {marker_cmd_text}"
+                    ) from exc
 
             if os.path.exists(seedURL):
                 candK = file_len(seedURL)
+                if candK == 0:
+                    raise RuntimeError(
+                        "Marker extraction produced an empty seed file: "
+                        f"{seedURL}. No qualifying marker hits were found. "
+                        "Check the contig length threshold, marker HMM, and hmmsearch output."
+                    )
             else:
-                logger.info("markerCmd failed! Not exist: " + markerCmd)
-                candK = 0
+                raise RuntimeError(
+                    "Marker extraction completed without creating the seed file: "
+                    f"{seedURL}"
+                )
         else:
             logger.info("Hmmsearch failed! Not exist: " + hmmResultURL)
             sys.exit()

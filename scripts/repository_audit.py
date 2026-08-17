@@ -23,6 +23,8 @@ REQUIRED_FILES = [
     "save_models/generateG13",
     "save_models/matching",
     "FragGeneScan-master/run_FragGeneScan.pl",
+    "FragGeneScan-master/Makefile",
+    "scripts/build_fraggenescan.sh",
     "contrastive_learning/train_CLmodel.py",
     "connect04/random_forest_predict_dir1.py",
     "binning02/random_forest_predict_bd0.py",
