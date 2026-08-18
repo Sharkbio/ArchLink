@@ -12,6 +12,7 @@ import yaml
 import multiprocessing
 import shutil
 from pathlib import Path
+from scripts.clustering_config import normalize_clustering_mode
 
 
 def load_yaml_with_vars(path):
@@ -95,6 +96,12 @@ def build_parser():
         default="configuration.yaml",
         help="Path to the YAML configuration file. Defaults to configuration.yaml in the repository root.",
     )
+    parser.add_argument(
+        "--clustering-mode",
+        choices=("full", "fast"),
+        default=None,
+        help="Use the full manuscript parameter sweep or the faster testing sweep.",
+    )
     return parser
 
 
@@ -154,6 +161,9 @@ def main():
     cli_args = build_parser().parse_args()
     config_path = Path(cli_args.config).expanduser().resolve()
     args = Args.from_yaml(str(config_path))
+    args.clustering_mode = normalize_clustering_mode(
+        cli_args.clustering_mode or getattr(args, "clustering_mode", "full")
+    )
     ensure_fraggenescan_ready(os.path.join(args.linking_path, "FragGeneScan-master"))
     
     # 初始化日志
@@ -161,6 +171,7 @@ def main():
     logger.info("ArchLink starting full pipeline.")
     logger.info(f"Configuration file: {config_path}")
     logger.info(f"Output Directory: {args.output_path}")
+    logger.info(f"Clustering mode: {args.clustering_mode}")
     contrastive_learning_main.contrastive_learning_main(args,logger)
     logger.info("STEP:generate...")
     generate_main.generate_init(args)

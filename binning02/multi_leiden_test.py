@@ -90,7 +90,8 @@ def run_leiden_clustering(
 # -------- Parallel batch runner --------
 def run_all_clusterings(logger, input_dir, seed_file, contig_file,
                         output_dir, num_threads, partgraph_ratio,
-                        bandwidth, max_edges_value):
+                        bandwidth, max_edges_value,
+                        resolution_parameter_list=None):
     """Load data and run Leiden clustering in parallel."""
     logger.info(f"Starting batch: max_edges={max_edges_value}")
 
@@ -121,36 +122,51 @@ def run_all_clusterings(logger, input_dir, seed_file, contig_file,
     initial_list = list(range(len(namelist)))
     is_membership_fixed = [i in seed_idx for i in initial_list]
 
-    # Parameter list
-    resolution_parameter_list = [1, 5, 10, 30, 60, 90, 110,130,150,200]
+    if resolution_parameter_list is None:
+        resolution_parameter_list = [1, 5, 10, 30, 60, 90, 110, 130, 150, 200]
 
-    # Run in parallel
-    async_results = []
-    with multiprocessing.Pool(num_threads) as pool:
-        for res_param in resolution_parameter_list:
-            outname = (
-                f"Leiden_bandwidth_{bandwidth}_res_maxedges{max_edges_value}"
-                f"_respara_{res_param}_partgraph_ratio_{partgraph_ratio}.tsv"
+    pending_tasks = []
+    for res_param in resolution_parameter_list:
+        outname = (
+            f"Leiden_bandwidth_{bandwidth}_res_maxedges{max_edges_value}"
+            f"_respara_{res_param}_partgraph_ratio_{partgraph_ratio}.tsv"
+        )
+        outfile = os.path.join(output_cluster_dir, outname)
+
+        if os.path.exists(outfile):
+            logger.info(f"Exists, skipped: {outfile}")
+            continue
+
+        logger.info(f"Submitting: {outfile}")
+        pending_tasks.append(
+            (
+                outfile,
+                namelist,
+                sources,
+                targets,
+                weights,
+                length_weight,
+                bandwidth,
+                res_param,
+                initial_list,
+                is_membership_fixed,
             )
-            outfile = os.path.join(output_cluster_dir, outname)
+        )
 
-            if os.path.exists(outfile):
-                logger.info(f"Exists, skipped: {outfile}")
-                continue
+    if not pending_tasks:
+        logger.info(f"All final Leiden results already exist for max_edges={max_edges_value}")
+        return
 
-            logger.info(f"Submitting: {outfile}")
-            async_results.append(pool.apply_async(
-                run_leiden_clustering,
-                (outfile, namelist, sources, targets, weights,
-                 length_weight, bandwidth, res_param,
-                 initial_list, is_membership_fixed)
-            ))
+    async_results = []
+    with multiprocessing.Pool(max(1, min(num_threads, len(pending_tasks)))) as pool:
+        for task in pending_tasks:
+            async_results.append(pool.apply_async(run_leiden_clustering, task))
 
-        for r in async_results:
+        for result in async_results:
             try:
-                r.get()
-            except Exception as e:
-                logger.error(f"Task failed: {e}")
+                result.get()
+            except Exception as exc:
+                logger.error(f"Task failed: {exc}")
 
     logger.info(f"Completed batch: max_edges={max_edges_value}")
 

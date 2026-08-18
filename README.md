@@ -131,6 +131,27 @@ Run the full pipeline with:
 python archlink.py --config configuration.yaml
 ```
 
+### Clustering modes
+
+The default `full` mode preserves the manuscript-style parameter search. For large datasets or
+development tests, use the faster `fast` mode:
+
+```bash
+python archlink.py --config configuration.yaml --clustering-mode fast
+```
+
+The initial clustering stage searches 540 Leiden parameter combinations in `full` mode and 8
+representative combinations in `fast` mode. The post-random-forest clustering stage searches 50
+combinations in `full` mode and 4 combinations in `fast` mode. Fast-mode results are intended for
+pipeline testing and debugging; use `full` mode for final analyses and reported results.
+
+The mode can also be stored in the YAML file under
+`contrastive_learning.share_params.clustering_mode`. The release configuration uses `full`, while
+`example/config.minimal.yaml` uses `fast`.
+
+When rerunning with a different mode, use a new output `ID` or remove the previous clustering
+outputs first. ArchLink reuses existing result files when their filenames already exist.
+
 ## Minimal example status
 
 A reviewer-facing minimal example layout is documented in [example/README.md](./example/README.md).

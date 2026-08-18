@@ -25,6 +25,7 @@ REQUIRED_FILES = [
     "FragGeneScan-master/run_FragGeneScan.pl",
     "FragGeneScan-master/Makefile",
     "scripts/build_fraggenescan.sh",
+    "scripts/clustering_config.py",
     "contrastive_learning/train_CLmodel.py",
     "connect04/random_forest_predict_dir1.py",
     "binning02/random_forest_predict_bd0.py",

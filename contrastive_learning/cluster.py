@@ -14,6 +14,7 @@ from sklearn.cluster._kmeans import euclidean_distances, stable_cumsum, KMeans, 
 
 from .utils import get_length, calculateN50, save_result
 from .scripts.gen_bins_from_tsv import gen_bins as gen_bins_from_tsv
+from scripts.clustering_config import get_initial_clustering_grid
 from typing import List, Optional, Union
 
 
@@ -373,10 +374,21 @@ def cluster(logger, args, prefix=None):
 
 
     ##### #########  hnswlib_method
-    parameter_list = [1, 5, 10, 30, 60, 90, 110,130,150,200]
-    bandwidth_list = [0.05, 0.1,0.15, 0.2,0.25,0.3]
-    partgraph_ratio_list =[60,100,80]
-    max_edges_list = [60,80,100]
+    clustering_grid = get_initial_clustering_grid(
+        getattr(args, "clustering_mode", "full")
+    )
+    parameter_list = clustering_grid["resolution_parameters"]
+    bandwidth_list = clustering_grid["bandwidths"]
+    partgraph_ratio_list = clustering_grid["partgraph_ratios"]
+    max_edges_list = clustering_grid["max_edges"]
+    logger.info(
+        "Initial Leiden grid (%s mode): %d jobs",
+        getattr(args, "clustering_mode", "full"),
+        len(parameter_list)
+        * len(bandwidth_list)
+        * len(partgraph_ratio_list)
+        * len(max_edges_list),
+    )
     for max_edges in max_edges_list:
         p = fit_hnsw_index(logger, norm_embeddings, num_workers, ef=max_edges * 10)
         seed_bacar_marker_idx = gen_seed_idx(seed_file, contig_id_list=namelist)
@@ -390,20 +402,43 @@ def cluster(logger, args, prefix=None):
         logger.info('knn query time cost:\t' +str(time_end - time_start) + "s")
 
 
-        with multiprocessing.Pool(num_workers) as multiprocess:
-            for partgraph_ratio in partgraph_ratio_list:
-                for bandwidth in bandwidth_list:
-                    for para in parameter_list:
-                        output_file = output_path + 'Leiden_bandwidth_' + str(
-                            bandwidth) + '_res_maxedges' + str(max_edges) + 'respara_'+str(para)+'_partgraph_ratio_'+str(partgraph_ratio)+'.tsv'
+        tasks = []
+        for partgraph_ratio in partgraph_ratio_list:
+            for bandwidth in bandwidth_list:
+                for para in parameter_list:
+                    output_file = output_path + 'Leiden_bandwidth_' + str(
+                        bandwidth) + '_res_maxedges' + str(max_edges) + 'respara_'+str(para)+'_partgraph_ratio_'+str(partgraph_ratio)+'.tsv'
 
-                        if not (os.path.exists(output_file)):
-                            multiprocess.apply_async(run_leiden, (output_file, namelist, ann_neighbor_indices, ann_distances, length_weight, max_edges, norm_embeddings,
-                                                                        bandwidth, 'l2', initial_list,is_membership_fixed,
-                                                                        para, partgraph_ratio))
+                    if not (os.path.exists(output_file)):
+                        tasks.append(
+                            (
+                                output_file,
+                                namelist,
+                                ann_neighbor_indices,
+                                ann_distances,
+                                length_weight,
+                                max_edges,
+                                norm_embeddings,
+                                bandwidth,
+                                'l2',
+                                initial_list,
+                                is_membership_fixed,
+                                para,
+                                partgraph_ratio,
+                            )
+                        )
 
-            multiprocess.close()
-            multiprocess.join()
+        if not tasks:
+            logger.info("All Leiden results already exist for max_edges=%s", max_edges)
+            continue
+
+        with multiprocessing.Pool(max(1, min(num_workers, len(tasks)))) as multiprocess:
+            results = [
+                multiprocess.apply_async(run_leiden, task)
+                for task in tasks
+            ]
+            for result in results:
+                result.get()
         logger.info('multiprocess Done')
 
 

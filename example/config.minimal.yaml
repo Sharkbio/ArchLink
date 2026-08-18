@@ -16,6 +16,7 @@ common:
 
 contrastive_learning:
   share_params:
+    clustering_mode: "fast"
     contig_len: 1000
     num_threads: 4
     n_views: 2

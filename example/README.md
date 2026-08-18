@@ -37,6 +37,10 @@ python scripts/repository_audit.py
 python archlink.py --help
 ```
 
+The minimal configuration sets `clustering_mode: "fast"` so that a test run uses a small
+representative Leiden parameter grid. This is for smoke testing only; use
+`clustering_mode: "full"` for final analyses.
+
 ## End-to-end command once toy input data are added
 
 ```bash

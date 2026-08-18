@@ -3,6 +3,7 @@ from .extract_initial_edge import *
 from . import best_feature_fre 
 from .random_forest_predict_bd0 import *
 from .multi_leiden_test import *
+from scripts.clustering_config import get_final_clustering_grid
 from . import score_cluster
 from . import transfer_fa
 import argparse
@@ -52,7 +53,16 @@ def binning_init(args,logger):
     enhance_edges_with_rf_prediction(args,project_dir, output_enhanced_dir, skip_codon_features,model_override_dir)
     
     
-    MAX_EDGES_LIST = [60,70,80, 85, 100]
+    final_grid = get_final_clustering_grid(
+        getattr(args, "clustering_mode", "full")
+    )
+    MAX_EDGES_LIST = final_grid["max_edges"]
+    resolution_parameter_list = final_grid["resolution_parameters"]
+    logger.info(
+        "Final Leiden grid (%s mode): %d jobs",
+        getattr(args, "clustering_mode", "full"),
+        len(MAX_EDGES_LIST) * len(resolution_parameter_list),
+    )
     input_dir = output_enhanced_dir
     seed_file = args.seed_file
     contig_file = args.contig_file
@@ -63,7 +73,18 @@ def binning_init(args,logger):
     
 
     for max_e in MAX_EDGES_LIST:
-        run_all_clusterings(logger,input_dir,seed_file,contig_file,output_dir,num_threads,partgraph_ratio,bandwith, max_e)
+        run_all_clusterings(
+            logger,
+            input_dir,
+            seed_file,
+            contig_file,
+            output_dir,
+            num_threads,
+            partgraph_ratio,
+            bandwith,
+            max_e,
+            resolution_parameter_list=resolution_parameter_list,
+        )
     score_cluster.main(args)
     args.output_path = output_path
     transfer_fa.main(args,logger)
