@@ -43,11 +43,15 @@ Create the conda environment:
 
 ```bash
 conda env create -f environment.yml
-conda activate archlink
+conda activate ly_archlink
 ```
 
 The environment file includes the core packaged dependencies used directly by the repository, including:
 
+- NumPy `1.23.5`
+- SciPy `1.10.1`
+- scikit-learn `1.1.2`
+- joblib `1.2.0`
 - PyTorch
 - `make` and a C compiler for building the bundled FragGeneScan executable
 - HMMER
@@ -56,6 +60,14 @@ The environment file includes the core packaged dependencies used directly by th
 - prodigal
 - CheckM2
 - Perl runtime
+
+The pinned NumPy/SciPy/scikit-learn/joblib versions are required for loading the bundled
+random-forest pickle files, which were trained with scikit-learn `1.1.2`. Do not upgrade
+scikit-learn in this environment unless the bundled models are retrained and revalidated.
+
+CheckM2 may be run from a separate environment, such as `ly_checkm2`, when that installation
+requires a different scikit-learn version. Configure its executable with
+`common.path.checkm2_bin` or `common.path.checkm2_path` in `configuration.yaml`.
 
 ## Quick repository check
 
