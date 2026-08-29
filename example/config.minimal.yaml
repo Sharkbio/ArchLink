@@ -8,6 +8,7 @@ common:
     bam_file: "./example/data/mini_run/bam"
     checkm2_path: "/path/to/checkm2_env"
     checkm2_bin: "checkm2"
+    checkm1_data_path: "/path/to/checkm1_database"
     LD_LIBRARY_PATH: "/path/to/seqgraph_htslib/lib:$LD_LIBRARY_PATH"
     output_path: "{base_path}/{ID}"
     embeding_path: "{output_path}/embeddings.tsv"

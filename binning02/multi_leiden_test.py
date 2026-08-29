@@ -106,16 +106,21 @@ def run_all_clusterings(logger, input_dir, seed_file, contig_file,
             targets = targets.astype(np.int64)
         logger.info(f"Loaded {len(sources)} edges")
     except Exception as e:
-        logger.error(f"Failed loading edges: {e}")
-        return
+        raise RuntimeError(
+            "Failed loading Leiden input edges. "
+            f"Expected extracted_edges.npz, namelist.txt, and length_weight.txt in {input_dir}. "
+            f"Original error: {e}"
+        ) from e
 
     # Load metadata
     try:
         namelist = pd.read_csv(os.path.join(input_dir, 'namelist.txt'), header=None)[0].tolist()
         length_weight = pd.read_csv(os.path.join(input_dir, 'length_weight.txt'), header=None)[0].tolist()
     except Exception as e:
-        logger.error(f"Failed loading metadata: {e}")
-        return
+        raise RuntimeError(
+            f"Failed loading Leiden metadata from {input_dir}. "
+            "Expected namelist.txt and length_weight.txt."
+        ) from e
 
     # Seed/fixed membership
     seed_idx = gen_seed_idx(seed_file, namelist)

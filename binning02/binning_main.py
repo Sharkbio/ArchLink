@@ -28,6 +28,16 @@ def resolve_checkm2_command(args):
 
     return "checkm2"
 
+
+def _edge_dir_complete(directory):
+    required = ("extracted_edges.npz", "namelist.txt", "length_weight.txt")
+    return all(
+        os.path.isfile(os.path.join(directory, name))
+        and os.path.getsize(os.path.join(directory, name)) > 0
+        for name in required
+    )
+
+
 def binning_init(args,logger):
     output_path = args.output_path
     
@@ -42,15 +52,32 @@ def binning_init(args,logger):
     args.bandwidth_for_edge_extraction = float(bandwith)
     args.partgraph_ratio = float(ratio)
 
-    extract_edges(logger, args)
-    
-    best_feature_fre.main(args)
+    initial_edge_dir = os.path.join(
+        args.output_path, "binning", "s_cluster", "leiden_initial_edge"
+    )
+    if _edge_dir_complete(initial_edge_dir):
+        logger.info("Initial Leiden edge files are complete; skipping edge extraction.")
+    else:
+        extract_edges(logger, args)
+
+    frequency_feature = os.path.join(
+        args.output_path, "binning", "s_cluster", "combine_binning.pkl"
+    )
+    if os.path.isfile(frequency_feature) and os.path.getsize(frequency_feature) > 0:
+        logger.info("Binning frequency features are complete; skipping regeneration.")
+    else:
+        best_feature_fre.main(args)
     
     skip_codon_features = args.skip_codon_features
     project_dir = args.output_path+'/binning/s_cluster'
     output_enhanced_dir = project_dir+'/leiden_enhanced_edge'
     model_override_dir = args.linking_path +'/save_models'
-    enhance_edges_with_rf_prediction(args,project_dir, output_enhanced_dir, skip_codon_features,model_override_dir)
+    if _edge_dir_complete(output_enhanced_dir):
+        logger.info("RF-enhanced edge files are complete; skipping edge enhancement.")
+    else:
+        enhance_edges_with_rf_prediction(
+            args, project_dir, output_enhanced_dir, skip_codon_features, model_override_dir
+        )
     
     
     final_grid = get_final_clustering_grid(

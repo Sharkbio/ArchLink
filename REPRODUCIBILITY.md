@@ -7,6 +7,9 @@ scikit-learn `1.1.2`, and joblib `1.2.0`. These versions are intentional: the bu
 pickle files were trained with scikit-learn `1.1.2` and may fail to load with newer scikit-learn
 tree representations. CheckM2 can be invoked from a separate environment, for example
 `ly_checkm2`, through the configured `checkm2_bin` or `checkm2_path`.
+ArchLink's UniItem stage separately requires a CheckM1 database containing
+`pfam/Pfam-A.hmm.dat`; configure it with `common.path.checkm1_data_path` or
+the `CHECKM_DATA_PATH` environment variable.
 
 Randomness control is partially fixed in the released training and clustering code paths. Examples include `torch.manual_seed(1)` and deterministic cuDNN settings in `contrastive_learning/train_CLmodel.py`, `torch.manual_seed(0)` in `contrastive_learning/simclr.py`, and `random_state=7` in the seed-kmeans implementation in `contrastive_learning/cluster.py`.
 

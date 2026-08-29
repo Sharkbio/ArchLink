@@ -20,26 +20,22 @@ def require_existing_path(*candidates):
 
 
 def merge_fasta_files(binning_dir, output_fasta):
-    """Merge all FASTA files (.fa/.fasta) inside subdirectories."""
-    if os.path.exists(output_fasta):
-        print(f"Merged FASTA already exists: {output_fasta}")
-        return
-
-    print("Merging all FASTA files...")
-
-    # Create an empty output file
-    with open(output_fasta, "w"):
-        pass
-
-    # Collect all .fa / .fasta files
+    """Merge only the current secondary-bin FASTA files."""
+    source_dir = os.path.join(binning_dir, "bins_0.9")
     fasta_files = []
-    for root, _, files in os.walk(binning_dir):
-        for name in files:
-            if name.endswith(".fa") or name.endswith(".fasta"):
-                fasta_files.append(os.path.join(root, name))
+    if os.path.isdir(source_dir):
+        for root, _, files in os.walk(source_dir):
+            for name in files:
+                if name.endswith((".fa", ".fasta", ".fna")):
+                    fasta_files.append(os.path.join(root, name))
+    fasta_files.sort()
+    if not fasta_files:
+        raise FileNotFoundError(
+            f"No secondary-bin FASTA files found under {source_dir}"
+        )
 
-    # Append contents
-    with open(output_fasta, "a") as outfile:
+    print("Merging current secondary-bin FASTA files...")
+    with open(output_fasta, "w") as outfile:
         for fasta_file in fasta_files:
             print(f"Processing: {fasta_file}")
             with open(fasta_file, "r") as f:

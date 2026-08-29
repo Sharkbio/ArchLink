@@ -208,7 +208,10 @@ def run_get_final_result(logger, args, seed_num: int, num_threads: int = 40,
     """
     logger.info("Seed_num:\t" + str(seed_num))
 
-    if not (args.bac_mg_table and args.ar_mg_table):
+    provided_bac_mg_table = getattr(args, "bac_mg_table", None)
+    provided_ar_mg_table = getattr(args, "ar_mg_table", None)
+
+    if not (provided_bac_mg_table and provided_ar_mg_table):
         logger.info("Run unitem profile:\t" + str(seed_num))
         bin_dirs = {}
         if res_name==None:
@@ -216,6 +219,13 @@ def run_get_final_result(logger, args, seed_num: int, num_threads: int = 40,
         bin_dirs[res_name] = (args.output_path + '/cluster_res/' + res_name + '_bins', 'fa')
 
         output_dir = args.output_path + '/cluster_res/unitem_profile'
+        if os.path.exists(output_dir):
+            bac_table = output_dir + '/binning_methods/' + res_name + '/checkm_bac/marker_gene_table.tsv'
+            ar_table = output_dir + '/binning_methods/' + res_name + '/checkm_ar/marker_gene_table.tsv'
+            if not (os.path.exists(bac_table) and os.path.exists(ar_table)):
+                logger.warning("Incomplete UniItem output detected; removing it before retrying.")
+                import shutil
+                shutil.rmtree(output_dir)
         if not (os.path.exists(output_dir)):
             make_sure_path_exists(output_dir)
             profile = Profile(num_threads)
@@ -224,9 +234,14 @@ def run_get_final_result(logger, args, seed_num: int, num_threads: int = 40,
 
         bac_mg_table = output_dir + '/binning_methods/' + res_name + '/checkm_bac/marker_gene_table.tsv'
         ar_mg_table = output_dir + '/binning_methods/' + res_name + '/checkm_ar/marker_gene_table.tsv'
+        if not (os.path.isfile(bac_mg_table) and os.path.isfile(ar_mg_table)):
+            raise RuntimeError(
+                "UniItem did not produce both CheckM1 marker tables. "
+                f"Expected: {bac_mg_table} and {ar_mg_table}"
+            )
     else:
-        bac_mg_table = args.bac_mg_table
-        ar_mg_table = args.ar_mg_table
+        bac_mg_table = provided_bac_mg_table
+        ar_mg_table = provided_ar_mg_table
 
     best_method = estimate_bins_quality_nobins(bac_mg_table, ar_mg_table, args.output_path + '/cluster_res/',ignore_kmeans_res=ignore_kmeans_res)
 

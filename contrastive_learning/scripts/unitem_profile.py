@@ -34,6 +34,7 @@ from biolib.common import make_sure_path_exists, check_dir_exists
 # add
 import argparse
 from collections import Counter
+import subprocess
 
 
 class Profile():
@@ -73,8 +74,8 @@ class Profile():
 
         gq = {}
         for gid in set(bac.keys()).union(ar):
-            bac_comp, bac_cont = bac[gid]
-            ar_comp, ar_cont = ar[gid]
+            bac_comp, bac_cont = bac.get(gid, (0.0, 0.0))
+            ar_comp, ar_cont = ar.get(gid, (0.0, 0.0))
             if bac_comp + bac_cont > ar_comp + ar_cont:
                 gq[gid] = ('Bacteria', bac_comp, bac_cont)
             else:
@@ -175,26 +176,47 @@ class Profile():
 
             for d, ms_file in [(CHECKM_BAC_DIR, CHECKM_BAC_MS), (CHECKM_AR_DIR, CHECKM_AR_MS)]:
                 cur_output_dir = os.path.join(output_dir, BINNING_METHOD_DIR, method_id, d)
-                cmd = 'checkm analyze -t %d -x %s %s %s %s' % (self.cpus,
-                                                               bin_ext,
-                                                               ms_file,
-                                                               bin_dir,
-                                                               cur_output_dir)
-                os.system(cmd)
+                os.makedirs(cur_output_dir, exist_ok=True)
+                command = [
+                    'checkm', 'analyze', '-t', str(self.cpus), '-x', bin_ext,
+                    ms_file, bin_dir, cur_output_dir,
+                ]
+                result = subprocess.run(
+                    command, text=True, capture_output=True, check=False
+                )
+                if result.returncode != 0:
+                    raise RuntimeError(
+                        "CheckM1 analyze failed. "
+                        f"Command: {' '.join(command)}\n{result.stderr.strip()}"
+                    )
 
                 marker_gene_table = os.path.join(cur_output_dir, MARKER_GENE_TABLE)
-                cmd = 'checkm qa -t %d -o 5 --tab_table -f %s %s %s' % (self.cpus,
-                                                                        marker_gene_table,
-                                                                        ms_file,
-                                                                        cur_output_dir)
-                os.system(cmd)
+                command = [
+                    'checkm', 'qa', '-t', str(self.cpus), '-o', '5',
+                    '--tab_table', '-f', marker_gene_table, ms_file, cur_output_dir,
+                ]
+                result = subprocess.run(
+                    command, text=True, capture_output=True, check=False
+                )
+                if result.returncode != 0:
+                    raise RuntimeError(
+                        "CheckM1 marker table generation failed. "
+                        f"Command: {' '.join(command)}\n{result.stderr.strip()}"
+                    )
 
                 genome_quality_table = os.path.join(cur_output_dir, GENOME_QUALITY_TABLE)
-                cmd = 'checkm qa -t %d -o 2 --tab_table -f %s %s %s' % (self.cpus,
-                                                                        genome_quality_table,
-                                                                        ms_file,
-                                                                        cur_output_dir)
-                os.system(cmd)
+                command = [
+                    'checkm', 'qa', '-t', str(self.cpus), '-o', '2',
+                    '--tab_table', '-f', genome_quality_table, ms_file, cur_output_dir,
+                ]
+                result = subprocess.run(
+                    command, text=True, capture_output=True, check=False
+                )
+                if result.returncode != 0:
+                    raise RuntimeError(
+                        "CheckM1 quality table generation failed. "
+                        f"Command: {' '.join(command)}\n{result.stderr.strip()}"
+                    )
 
             bac_quality_table = os.path.join(output_dir,
                                              BINNING_METHOD_DIR,
@@ -207,11 +229,18 @@ class Profile():
                                             CHECKM_AR_DIR,
                                             GENOME_QUALITY_TABLE)
             if not os.path.exists(bac_quality_table) or not os.path.exists(ar_quality_table):
-                self.logger.error('Missing quality table for %s.' % method_id)
-                self.logger.error('Please verify there were bins in the bin directory specified for this method.')
-                sys.exit()
+                raise RuntimeError(
+                    f"CheckM1 produced incomplete output for {method_id}. "
+                    f"Expected {bac_quality_table} and {ar_quality_table}."
+                )
 
             genome_quality[method_id] = self._genome_quality(bac_quality_table, ar_quality_table)
+            if not genome_quality[method_id]:
+                raise RuntimeError(
+                    f"CheckM1 returned zero genomes for {method_id}. "
+                    "The input bin directory may be empty or CheckM1 may not have "
+                    "completed its database setup."
+                )
 
         self._report_genome_quality(genome_quality, output_dir)
 

@@ -169,8 +169,7 @@ def enhance_edges_with_rf_prediction(args_from_caller, project_dir, output_enhan
             print("跳过 codon.pkl 加载。")
 
     except Exception as e:
-        print(f"加载模型、特征列名称或数据文件时出错: {e}。退出。")
-        return
+        raise RuntimeError(f"加载模型、特征列名称或数据文件时出错: {e}") from e
 
     # --- 3. 加载原始边数据和 contig 信息 ---
     
@@ -181,8 +180,10 @@ def enhance_edges_with_rf_prediction(args_from_caller, project_dir, output_enhan
     if not os.path.exists(namelist_path) or \
        not os.path.exists(extracted_edges_path) or \
        not os.path.exists(length_weight_path):
-        print(f"错误: 在派生的输入目录 '{input_dir}' 中找不到所需的边文件。退出。")
-        return
+        raise FileNotFoundError(
+            f"在派生的输入目录 '{input_dir}' 中找不到所需的边文件。"
+            "需要 extracted_edges.npz、namelist.txt 和 length_weight.txt。"
+        )
 
     try:
         namelist_df = pd.read_csv(namelist_path, header=None)
@@ -201,8 +202,7 @@ def enhance_edges_with_rf_prediction(args_from_caller, project_dir, output_enhan
         print(f"成功加载原始长度权重。")
 
     except Exception as e:
-        print(f"从 '{input_dir}' 加载原始边数据或 contig 信息时出错: {e}。退出。")
-        return
+        raise RuntimeError(f"从 '{input_dir}' 加载原始边数据或 contig 信息时出错: {e}") from e
 
     # 创建 D 特征查找表 (大型对象 3)
     edge_weights_D_lookup_temp = {}
@@ -265,16 +265,16 @@ def enhance_edges_with_rf_prediction(args_from_caller, project_dir, output_enhan
             print(df_all_features.head())
 
         except Exception as e:
-            print(f"多进程期间出错: {e}。退出。")
-            return
+            raise RuntimeError(f"多进程期间出错: {e}") from e
 
     # --- 5. 组合和过滤数据进行增强（在 Manager 上下文之外） ---
     df_for_enhancement = pd.DataFrame(df_all_features, columns=['contig_pair', 'prediction_proba'])
     df_for_enhancement = df_for_enhancement.dropna(subset=['prediction_proba']).set_index('contig_pair')
     
     if df_for_enhancement.empty:
-        print("\n错误: 所有数据点因缺少特征值而被删除。无法执行预测。")
-        return
+        raise RuntimeError(
+            "所有数据点因缺少模型特征值而被删除，无法执行 RF 边增强。"
+        )
 
     print(f"\n过滤后用于预测的样本数: {len(df_for_enhancement)}。")
 

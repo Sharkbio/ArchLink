@@ -157,11 +157,9 @@ def extract_edges(logger, args):
         embMat_full = pd.read_csv(emb_file, sep='\t', usecols=range(1, embHeader.shape[1])).values
         namelist_full = pd.read_csv(emb_file, sep='\t', usecols=range(1)).values[:, 0]
     except FileNotFoundError:
-        logger.error(f"Embeddings file not found: {emb_file}. Exiting.")
-        return
+        raise FileNotFoundError(f"Embeddings file not found: {emb_file}") from None
     except Exception as e:
-        logger.error(f"Error loading embeddings file {emb_file}: {e}. Exiting.")
-        return
+        raise RuntimeError(f"Error loading embeddings file {emb_file}: {e}") from e
 
     # Get contig lengths
     lengths_map = get_length(contig_file)
@@ -176,8 +174,10 @@ def extract_edges(logger, args):
 
     logger.info(f"Number of contigs after length filtering: {len(namelist_filtered)}")
     if len(namelist_filtered) == 0:
-        logger.error("No contigs left after length filtering. Cannot proceed with edge extraction. Exiting.")
-        return
+        raise RuntimeError(
+            "No contigs remain after length filtering. "
+            f"Check contig_len={contig_len_threshold} and the input FASTA."
+        )
 
     N50 = calculateN50(list(length_weight_filtered))
     logger.info(f'N50 after filtering: {N50:.2f}')
@@ -189,8 +189,7 @@ def extract_edges(logger, args):
         norm_embeddings = normalize(embMat_filtered)
     
     if len(norm_embeddings) == 0:
-        logger.error("No embeddings left after filtering. Exiting.")
-        return
+        raise RuntimeError("No embeddings remain after filtering; cannot extract graph edges.")
 
     # Fit HNSW index
     # ef is set to max_edges * 10 for better recall, as suggested in original code

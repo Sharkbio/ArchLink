@@ -103,6 +103,10 @@ def make_output_dir(BINNING_DIR_ROOT):
 
     binning_target_dir.mkdir(exist_ok=True)
     connect_target_dir.mkdir(exist_ok=True)
+    for target_dir in (binning_target_dir, connect_target_dir):
+        for old_file in target_dir.iterdir():
+            if old_file.is_file() and old_file.suffix.lower() in {".fa", ".fna", ".fasta"}:
+                old_file.unlink()
 
     for bin_dir in bins_09_dir.iterdir():
         if not bin_dir.is_dir():

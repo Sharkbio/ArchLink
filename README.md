@@ -17,6 +17,9 @@ This repository contains the source code, configuration templates, bundled helpe
 - `save_models/`: pretrained Transformer checkpoint, random-forest models, and helper binaries
 - `FragGeneScan-master/`: bundled FragGeneScan source, Perl wrapper, and training files
 - `scripts/repository_audit.py`: repository completeness check for public release
+- `scripts/resume_archlink_linking.py`: resume secondary binning and linking
+- `scripts/export_archlink_mags.py`: export paired before/after MAG sets
+- `docs/TROUBLESHOOTING.md`: runtime failures and recovery commands
 
 ## Included release artifacts
 
@@ -68,6 +71,9 @@ scikit-learn in this environment unless the bundled models are retrained and rev
 CheckM2 may be run from a separate environment, such as `ly_checkm2`, when that installation
 requires a different scikit-learn version. Configure its executable with
 `common.path.checkm2_bin` or `common.path.checkm2_path` in `configuration.yaml`.
+ArchLink's UniItem stage separately requires a CheckM1 database containing
+`pfam/Pfam-A.hmm.dat`; configure it with `common.path.checkm1_data_path` or
+the `CHECKM_DATA_PATH` environment variable.
 
 ## Quick repository check
 
@@ -131,6 +137,7 @@ Edit `configuration.yaml` before running full analyses. At minimum, update:
 - `common.path.base_path`
 - `common.path.ID`
 - `common.path.checkm2_bin` or `common.path.checkm2_path`
+- `common.path.checkm1_data_path` or `CHECKM_DATA_PATH`
 - `common.path.LD_LIBRARY_PATH`
 
 The template uses repository-relative defaults so that the file can be versioned safely.
@@ -203,6 +210,11 @@ Main outputs are written under the configured `output_path` and include:
 - CheckM2 quality reports
 - linking graphs
 - bin-level scaffolding outputs
+
+The pipeline validates that both the before-link and after-link MAG
+collections contain non-empty FASTA files before reporting successful
+completion. See [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) for
+resume and MAG export commands.
 
 ## Reproducibility notes
 

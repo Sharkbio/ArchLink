@@ -15,11 +15,19 @@ def filter_and_copy_bins(summary_file, source_fa_dir, output_dir):
     """
     try:
         # Check if the summary file exists
-        if not os.path.exists(summary_file):
-            print(f"Error: Summary file '{summary_file}' not found.")
-            return
+        if not os.path.isfile(summary_file) or os.path.getsize(summary_file) == 0:
+            raise FileNotFoundError(
+                f"CheckM2 summary file is missing or empty: {summary_file}"
+            )
 
-        # Create output directory if it doesn't exist
+        # This directory is derived output; remove stale bins before rebuilding.
+        if os.path.isdir(output_dir):
+            for entry in os.listdir(output_dir):
+                entry_path = os.path.join(output_dir, entry)
+                if os.path.isdir(entry_path):
+                    shutil.rmtree(entry_path)
+                else:
+                    os.remove(entry_path)
         os.makedirs(output_dir, exist_ok=True)
         
         # Read the summary file using pandas
@@ -28,11 +36,17 @@ def filter_and_copy_bins(summary_file, source_fa_dir, output_dir):
         # Check for required columns
         required_cols = ['Name', 'Contamination', 'Genome_Size', 'Total_Contigs', 'Completeness']
         if not all(col in df.columns for col in required_cols):
-            print(f"Error: The summary file must contain columns: {required_cols}")
-            return
+            raise ValueError(
+                f"CheckM2 summary must contain columns: {required_cols}; "
+                f"found: {list(df.columns)}"
+            )
 
         # Filter the DataFrame for bins with Contamination < 10%
         high_purity_bins = df[df['Contamination'] < 10.0].copy()
+        if high_purity_bins.empty:
+            raise RuntimeError(
+                "CheckM2 selected zero bins with contamination < 10%."
+            )
         
         # Calculate 'Purity' from 'Contamination'
         high_purity_bins['Purity'] = 100 - high_purity_bins['Contamination']
@@ -72,12 +86,15 @@ def filter_and_copy_bins(summary_file, source_fa_dir, output_dir):
             else:
                 print(f"  - Warning: Source file '{source_file}' not found. Skipping.")
 
+        if copied_count != len(high_purity_bins):
+            raise FileNotFoundError(
+                "CheckM2-qualified bins are missing from the secondary bin "
+                f"directory: expected {len(high_purity_bins)}, copied {copied_count}."
+            )
         print(f"Finished copying {copied_count} FASTA files.")
         
-    except FileNotFoundError as e:
-        print(f"Error: A file or directory was not found. Please check your paths. Details: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    except Exception:
+        raise
 
 def main():
     if len(sys.argv) != 4:

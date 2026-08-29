@@ -13,6 +13,8 @@ import multiprocessing
 import shutil
 from pathlib import Path
 from scripts.clustering_config import normalize_clustering_mode
+from scripts.checkm_runtime import ensure_checkm1_ready
+from scripts.output_validation import validate_archlink_output
 
 
 def load_yaml_with_vars(path):
@@ -164,6 +166,9 @@ def main():
     args.clustering_mode = normalize_clustering_mode(
         cli_args.clustering_mode or getattr(args, "clustering_mode", "full")
     )
+    args.checkm1_data_path = ensure_checkm1_ready(
+        getattr(args, "checkm1_data_path", None)
+    )
     ensure_fraggenescan_ready(os.path.join(args.linking_path, "FragGeneScan-master"))
     
     # 初始化日志
@@ -181,6 +186,12 @@ def main():
     generate_cos_main.main(args)
     logger.info("connect ...")
     connect_main.connect_main(args)
+    counts = validate_archlink_output(args.output_path)
+    logger.info(
+        "ArchLink completed successfully: before_link=%d, after_link=%d",
+        counts["before_link"],
+        counts["after_link"],
+    )
     
     # remove_temp_file(args.output_path)
 

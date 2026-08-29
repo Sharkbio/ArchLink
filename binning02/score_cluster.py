@@ -324,6 +324,9 @@ def main(args):
     
     args.__setattr__('res_path', os.path.join(args.output_path, 'binning/s_cluster/cluster_res/'))
     
+    args.bac_mg_table = getattr(args, "bac_mg_table", None)
+    args.ar_mg_table = getattr(args, "ar_mg_table", None)
+
     # 查找匹配的文件夹
     binning_dir = os.path.join(args.output_path, 'cluster_res/unitem_profile', 'binning_methods')
     
