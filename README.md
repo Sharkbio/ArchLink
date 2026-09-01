@@ -9,7 +9,9 @@ This repository contains the source code, configuration templates, bundled helpe
 - `archlink.py`: top-level pipeline entry point
 - `configuration.yaml`: full configuration template
 - `environment.yml`: conda environment specification
-- `example/`: minimal reviewer-facing run layout and configuration template
+- `example/`: bundled synthetic FASTA/BAM toy example, expected outputs, and validators
+- `figures/`: deterministic main-figure generation entry points
+- `source_data/`: versioned Source Data workbook and panel provenance map
 - `benchmarks/`: public benchmark/evaluation entry points
 - `contrastive_learning/`: representation learning and initial binning
 - `generate01/`, `binning02/`: graph construction and bin refinement
@@ -55,6 +57,9 @@ The environment file includes the core packaged dependencies used directly by th
 - SciPy `1.10.1`
 - scikit-learn `1.1.2`
 - joblib `1.2.0`
+- pandas `1.5.3`
+- matplotlib `3.7.5`
+- openpyxl `3.1.5`
 - PyTorch
 - `make` and a C compiler for building the bundled FragGeneScan executable
 - HMMER
@@ -82,6 +87,8 @@ Reviewers can confirm that the public repository contains the expected source fi
 ```bash
 python scripts/repository_audit.py
 python archlink.py --help
+python example/create_toy_data.py --verify-only
+bash example/run_toy.sh
 ```
 
 ## External runtime expectations
@@ -171,19 +178,35 @@ The mode can also be stored in the YAML file under
 When rerunning with a different mode, use a new output `ID` or remove the previous clustering
 outputs first. ArchLink reuses existing result files when their filenames already exist.
 
-## Minimal example status
+## Reviewer toy example
 
-A reviewer-facing minimal example layout is documented in [example/README.md](./example/README.md).
+The repository bundles a synthetic eight-contig FASTA, coordinate-sorted BAM,
+BAI index, two-bin mapping and deterministic expected outputs. The portable
+smoke test demonstrates one accepted link, a tied competition that is explicitly
+abstained, unconnected contig ends and the released scaffold FASTA builder:
 
-The repository already includes:
+```bash
+bash example/run_toy.sh
+```
 
-- the executable pipeline
-- configuration templates
-- pretrained model weights
-- random-forest model files
-- benchmark/evaluation entry points
+See [example/README.md](./example/README.md) for the PowerShell command and the
+optional full end-to-end tier requiring CheckM databases and Linux executables.
 
-The repository does not yet bundle a redistributable toy input dataset consisting of a small contig FASTA and matching sorted BAM files. Until such a toy dataset is added, the minimal example section documents the expected layout and launch command, but cannot serve as a fully self-contained end-to-end demo.
+## Figure generation
+
+The combined Source Data workbook is versioned at
+`source_data/Source_Data.xlsx`. Regenerate all data-driven main-figure panels
+and a machine-readable build manifest with:
+
+```bash
+python figures/make_all_figures.py \
+  --source-data source_data/Source_Data.xlsx \
+  --output figures/output
+```
+
+The exact sheet-to-panel map, fixed seed, sample/tool order, color map,
+statistics and non-scripted panel limitations are documented in
+[figures/README.md](./figures/README.md).
 
 ## Benchmark and evaluation entry points
 
@@ -218,19 +241,17 @@ resume and MAG export commands.
 
 ## Reproducibility notes
 
-- The repository contains the released source code used by the ArchLink workflow.
+- The algorithmic manuscript baseline is Git commit `af2231f`.
+- The fixed submission release is `v1.0.0-nbt-submission`; reproducibility-only
+  additions after `af2231f` do not change the core ArchLink algorithm.
 - The pretrained Transformer checkpoint, random-forest model files, and helper binaries required by the released linking stages are bundled in `save_models/`.
 - The main configuration template, a minimal example configuration, and the environment specification are versioned in the repository.
 - `contrastive_learning/train_CLmodel.py` sets explicit PyTorch random seeds for model training code paths.
+- Model and Source Data SHA-256 checksums are versioned in
+  `save_models/SHA256SUMS.txt` and `source_data/SHA256SUMS.txt`.
 
-## Current gaps before manuscript submission
-
-This repository is substantially closer to reviewer-ready than an incomplete code drop, but two items still merit explicit completion before submission:
-
-1. create a fixed GitHub release/tag for the submitted software version
-2. add a small redistributable toy dataset so the minimal example becomes fully executable from the public repository alone
-
-If manuscript figures and source-data generation scripts are intended to be part of the code release, they should also be added as explicit directories such as `figures/` and `source_data/` with one documented entry point per figure panel or table.
+The complete submission snapshot and known limitations are listed in
+[RELEASE_NOTES_v1.0.0-nbt-submission.md](./RELEASE_NOTES_v1.0.0-nbt-submission.md).
 
 ## Citation
 

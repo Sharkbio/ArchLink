@@ -1,0 +1,2 @@
+contig_a	end_a	contig_b	end_b	spanning_pairs	status	reason
+contig01	R	contig02	L	12	accepted	unique reciprocal best

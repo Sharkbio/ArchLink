@@ -37,14 +37,39 @@ REQUIRED_FILES = [
     "binning02/random_forest_predict_bd0.py",
     "example/README.md",
     "example/config.minimal.yaml",
+    "example/config.toy.yaml",
+    "example/create_toy_data.py",
+    "example/run_toy.py",
+    "example/run_toy.sh",
+    "example/run_toy.ps1",
+    "example/toy_bam.py",
+    "example/data/toy_contigs.fasta",
+    "example/data/toy_reads.sorted.bam",
+    "example/data/toy_reads.sorted.bam.bai",
+    "example/expected/expected_bins.tsv",
+    "example/expected/expected_candidates.tsv",
+    "example/expected/expected_links.tsv",
+    "example/expected/expected_unconnected_ends.tsv",
+    "example/expected/expected_scaffolds.fasta",
+    "scripts/check_toy_output.py",
+    "figures/README.md",
+    "figures/make_all_figures.py",
+    "figures/fig2_binning_benchmark.py",
+    "figures/fig3_link_validation.py",
+    "figures/fig4_taxonomy_metabolism.py",
+    "figures/fig5_bgc_analysis.py",
+    "figures/fig6_quantitative.py",
+    "figures/requirements.txt",
+    "source_data/Source_Data.xlsx",
+    "source_data/Figure_Panel_Data_Source_Map_v3.csv",
+    "source_data/SHA256SUMS.txt",
+    "save_models/SHA256SUMS.txt",
+    "RELEASE_NOTES_v1.0.0-nbt-submission.md",
     "benchmarks/README.md",
 ]
 
 
-OPTIONAL_PATHS = [
-    "figures",
-    "source_data",
-]
+OPTIONAL_PATHS = []
 
 
 def main() -> int:

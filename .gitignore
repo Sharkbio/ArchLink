@@ -16,6 +16,8 @@ __pycache__/
 Thumbs.db
 .idea/
 .vscode/
+/archlink_next/
+/ARCHLINK_NEXT_DESIGN.md
 
 # Generated runtime directories
 aug/
@@ -28,7 +30,9 @@ linking/
 data/
 dist/
 build/
-example/data/
+example/output/
+figures/output/
+!example/data/
 
 # Regenerable outputs
 *.npz
@@ -38,6 +42,10 @@ example/data/
 *.bai
 *.bam
 *.sam
+
+# The reviewer-facing synthetic toy fixture is intentionally versioned.
+!example/data/toy_reads.sorted.bam
+!example/data/toy_reads.sorted.bam.bai
 
 # Local training checkpoints outside the release artifact directory
 *.ckpt

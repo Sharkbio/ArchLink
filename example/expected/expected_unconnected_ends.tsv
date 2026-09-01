@@ -1,0 +1,15 @@
+contig_id	end	reason
+contig01	L	no candidate evidence
+contig02	R	no candidate evidence
+contig03	L	no candidate evidence
+contig03	R	tied at contig03:R; support < 8
+contig04	L	tied at contig03:R; support < 8
+contig04	R	no candidate evidence
+contig05	L	tied at contig03:R; support < 8
+contig05	R	no candidate evidence
+contig06	L	no candidate evidence
+contig06	R	no candidate evidence
+contig07	L	no candidate evidence
+contig07	R	no candidate evidence
+contig08	L	no candidate evidence
+contig08	R	no candidate evidence

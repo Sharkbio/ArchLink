@@ -1,0 +1,4 @@
+contig_a	end_a	contig_b	end_b	spanning_pairs	status	reason
+contig01	R	contig02	L	12	accepted	unique reciprocal best
+contig03	R	contig04	L	5	abstained	tied at contig03:R; support < 8
+contig03	R	contig05	L	5	abstained	tied at contig03:R; support < 8
